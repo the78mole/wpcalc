@@ -5,8 +5,8 @@ from pathlib import Path
 
 # Set the title and favicon that appear in the Browser's tab bar.
 st.set_page_config(
-    page_title='GDP dashboard',
-    page_icon=':earth_americas:', # This is an emoji shortcode. Could be a URL too.
+    page_title='Wärmepumpenrechner',
+    page_icon=':fire:', # This is an emoji shortcode. Could be a URL too.
 )
 
 # -----------------------------------------------------------------------------
@@ -64,11 +64,9 @@ gdp_df = get_gdp_data()
 
 # Set the title that appears at the top of the page.
 '''
-# :earth_americas: GDP dashboard
+# :fire: Wärmepumpenrechner
 
-Browse GDP data from the [World Bank Open Data](https://data.worldbank.org/) website. As you'll
-notice, the data only goes to 2022 right now, and datapoints for certain years are often missing.
-But it's otherwise a great (and did I mention _free_?) source of data.
+Berechnung der Amortisation einer Wärmepumpe gegenüber eines neuen Gas- oder Ölkessels.
 '''
 
 # Add some spacing
@@ -77,6 +75,16 @@ But it's otherwise a great (and did I mention _free_?) source of data.
 
 min_value = gdp_df['Year'].min()
 max_value = gdp_df['Year'].max()
+
+wp_choice = st.selectbox("Vorauswahl für Wärmepumpendaten", ["Ein Dummy", "Anderer Dummy"])
+incent_choice = st.selectbox("Förderprogramm", ["keines", "GEG (normal)", "GEG (schnell)", "GEG (max)"])
+
+wp_cost = st.number_input("Angebotspreis Wärmepumpe",40000)
+wp_incent = st.number_input("Förderung %", 0, 100, 20)
+wp_incent_max = st.number_input("Förderung max. €", 0, 100000, 30000)
+
+co2_2027 = st.number_input("Erwarteter CO2-Preis €/t", 50, 1000, 250)
+co2_pre = 55
 
 from_year, to_year = st.slider(
     'Which years are you interested in?',
