@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import math
+from datetime import datetime as dt
 from pathlib import Path
 
 # Set the title and favicon that appear in the Browser's tab bar.
@@ -9,57 +10,6 @@ st.set_page_config(
     page_icon=':fire:', # This is an emoji shortcode. Could be a URL too.
 )
 
-# -----------------------------------------------------------------------------
-# Declare some useful functions.
-
-@st.cache_data
-def get_gdp_data():
-    """Grab GDP data from a CSV file.
-
-    This uses caching to avoid having to read the file every time. If we were
-    reading from an HTTP endpoint instead of a file, it's a good idea to set
-    a maximum age to the cache with the TTL argument: @st.cache_data(ttl='1d')
-    """
-
-    # Instead of a CSV on disk, you could read from an HTTP endpoint here too.
-    DATA_FILENAME = Path(__file__).parent/'data/gdp_data.csv'
-    raw_gdp_df = pd.read_csv(DATA_FILENAME)
-
-    MIN_YEAR = 1960
-    MAX_YEAR = 2022
-
-    # The data above has columns like:
-    # - Country Name
-    # - Country Code
-    # - [Stuff I don't care about]
-    # - GDP for 1960
-    # - GDP for 1961
-    # - GDP for 1962
-    # - ...
-    # - GDP for 2022
-    #
-    # ...but I want this instead:
-    # - Country Name
-    # - Country Code
-    # - Year
-    # - GDP
-    #
-    # So let's pivot all those year-columns into two: Year and GDP
-    gdp_df = raw_gdp_df.melt(
-        ['Country Code'],
-        [str(x) for x in range(MIN_YEAR, MAX_YEAR + 1)],
-        'Year',
-        'GDP',
-    )
-
-    # Convert years from string to integers
-    gdp_df['Year'] = pd.to_numeric(gdp_df['Year'])
-
-    return gdp_df
-
-gdp_df = get_gdp_data()
-
-# -----------------------------------------------------------------------------
 # Draw the actual page
 
 # Set the title that appears at the top of the page.
@@ -73,87 +23,220 @@ Berechnung der Amortisation einer Wärmepumpe gegenüber eines neuen Gas- oder �
 ''
 ''
 
-min_value = gdp_df['Year'].min()
-max_value = gdp_df['Year'].max()
+heizopts = { "gas" : "Erdgas", "oil" : "Heizöl EL" }
 
-wp_choice = st.selectbox("Vorauswahl für Wärmepumpendaten", ["Ein Dummy", "Anderer Dummy"])
-incent_choice = st.selectbox("Förderprogramm", ["keines", "GEG (normal)", "GEG (schnell)", "GEG (max)"])
+col1, col2 = st.columns(2)
+col3, col4 = st.columns(2)
 
-wp_cost = st.number_input("Angebotspreis Wärmepumpe",40000)
-wp_incent = st.number_input("Förderung %", 0, 100, 20)
-wp_incent_max = st.number_input("Förderung max. €", 0, 100000, 30000)
+with col1: 
+    st.write("### Altanlage")
+    altheiz = st.selectbox("Heizungsart", heizopts.values())
+    if altheiz == "Erdgas":
+        old_gas = True
+        old_oil = False
+    else:
+        old_oil = True
+        old_gas = False
 
-co2_2027 = st.number_input("Erwarteter CO2-Preis €/t", 50, 1000, 250)
-co2_pre = 55
+    if old_gas:
+        # Laut BMWK 0,65 ct/kWh @ 30 €/t_CO2
+        co2gas_gperkwh = st.slider("gCO2_eq pro kWh Gas", 200, 400, 216)
+        cons_kWh = st.number_input("Gasbedarf pro Jahr (kWh)", 30000)
+        act_gasprice = st.number_input("Gaspreis aktuell (ct/kWh)", 0.0, 30.0, 11.78, 0.1)
+    else:
+        # bei 266 g_CO2/Liter => 7,89 ct/Liter
+        co2oil_gprol = st.slider("gCO2_eq pro Liter HEL", 200, 400, 266) 
+        cons_liter = st.number_input("Ölbedarf pro Jahr (l)", 3500)
+        st.write(f"Entspricht {cons_liter * 10} kWh/a")
+        act_oilprice = st.slider("Heizölpreis €/Liter",0.5,2.0,1.01,0.01)
+        act_oilprice_kWh = 10 * act_oilprice # recalc to ct/kWh
+        cons_kWh = cons_liter * 10
 
-from_year, to_year = st.slider(
-    'Which years are you interested in?',
-    min_value=min_value,
-    max_value=max_value,
-    value=[min_value, max_value])
+    repl_price = st.number_input("Preis für Ersatz", 0, 20000, 9000)
+    burn_perf = st.slider("Wirkungsgrad Kessel", 50, 110, 90)
 
-countries = gdp_df['Country Code'].unique()
+with col2:
+    st.write("### Wärmepumpe")
+    wp_choice = st.selectbox("Vorauswahl für Wärmepumpendaten", ["Ein Dummy", "Anderer Dummy"])
+    
+    wp_cost = st.slider("Angebotspreis Wärmepumpe",5000, 50000, 40000, 100)
 
-if not len(countries):
-    st.warning("Select at least one country")
+    tooltip_jaz = """Bitte hier eventuelle Verluste durch Pufferspeicher einrechnen"""
+    wp_jaz = st.slider("Hersteller JAZ", 2.0, 8.0, 4.0, 0.1, help=tooltip_jaz)
 
-selected_countries = st.multiselect(
-    'Which countries would you like to view?',
-    countries,
-    ['DEU', 'FRA', 'GBR', 'BRA', 'MEX', 'JPN'])
+    tooltip_incent = """TODO: Diese Auswahl füllt die nächsten Felder aus, bitte prüfen."""
+    incent_choice = st.selectbox("Förderprogramm", ["keines", "GEG (normal)", "GEG (schnell)", "GEG (max)"], help=tooltip_incent)
 
-''
-''
-''
+    wp_incent = st.number_input("Förderung %", 0, 100, 50)
+    wp_incent_max = st.number_input("Förderung max. €", 0, 100000, 30000)
 
-# Filter the data
-filtered_gdp_df = gdp_df[
-    (gdp_df['Country Code'].isin(selected_countries))
-    & (gdp_df['Year'] <= to_year)
-    & (from_year <= gdp_df['Year'])
-]
-
-st.header('GDP over time', divider='gray')
-
-''
-
-st.line_chart(
-    filtered_gdp_df,
-    x='Year',
-    y='GDP',
-    color='Country Code',
-)
-
-''
-''
+    initial_wp = wp_cost - min(wp_cost * (wp_incent / 100), wp_incent_max)
+    #st.write(f"Anschaffungskosten: {wp_cost:.0f} €")         
+    st.markdown("Kosten abzgl. Förderung: "
+                "<span style='font-size: 2em; font-weight: bold;'>"
+                f"`{initial_wp:.0f}`</span> €", 
+                unsafe_allow_html=True)
 
 
-first_year = gdp_df[gdp_df['Year'] == from_year]
-last_year = gdp_df[gdp_df['Year'] == to_year]
+with col3:
+    st.write("### Annahmen")
+    co2price_2027 = st.slider("Erwarteter CO2-Preis €/t", 50, 1000, 250)
+    elprice = st.slider("Erwarteter Strompreis ct/kWh", 20.0, 60.0, 30.0, 0.1)
+    co2price_pre27 = 55
+    if old_gas:
+        co2_price_ct_per_EUR_gas = 1.19 * co2gas_gperkwh / 1000000
+    else:
+        co2_price_ct_per_EUR_oil = 1.19 * co2oil_gprol / 1000000
+    curyear = dt.now().year
+    startyear = st.slider("Beginn im Jahr", curyear, curyear + 10, curyear, 1)
+    calclength = st.slider("Anzahl Jahre:", 5, 50, 20)
 
-st.header(f'GDP in {to_year}', divider='gray')
+with col4:
 
-''
+    st.write("### Kosten")
+    
+    if old_gas:
+        price_part_pre2027 = 100 * co2_price_ct_per_EUR_gas * co2price_pre27 
+        price_part_2027 = 100 * co2_price_ct_per_EUR_gas * co2price_2027
+        add_text = " (ab 2027)"
+        st.write(f"CO2-Kosten (vor 2027): {co2price_pre27} €/t")
+        st.write(f"CO2-Kosten {add_text}: {co2price_2027} €/t")
 
-cols = st.columns(4)
+        st.write("CO2-Preisanteil (vor 2027): "
+                f"{price_part_pre2027:.2f} ct/kWh")
+        st.write(f"CO2-Preisanteil{add_text}: "
+                f"{price_part_2027:.2f} ct/kWh")
+        
+        st.write("#### Alte Heizung")
+        st.markdown(f"Wärmepreis (aktuell): "
+                    "<span style='font-family: monospace;"
+                    "color: yellow; font-weight: bold;'>"
+                    f"{100 * act_gasprice / burn_perf:.2f}</span> ct/kWh", unsafe_allow_html=True)
+        totprice_gas = (act_gasprice - price_part_pre2027 +
+                        price_part_2027) / burn_perf
+        st.markdown(f"Wärmepreis {add_text}: "
+                    "<span style='font-family: monospace;"
+                    "color: red; font-weight: bold;'>"
+                    f"{100 * totprice_gas:.2f}</span> ct/kWh", unsafe_allow_html=True)
 
-for i, country in enumerate(selected_countries):
-    col = cols[i % len(cols)]
+        st.write("#### Wärmepumpe")
+        totprice_wp = elprice / wp_jaz
+        st.markdown(f"Wärmepreis {add_text}: "
+                    "<span style='font-family: monospace;"
+                    "color: green; font-weight: bold;'>"
+                    f"{totprice_wp:.2f}</span> ct/kWh", unsafe_allow_html=True)
+    else: # Heizöl
+        price_part_pre2027 = 100 * co2_price_ct_per_EUR_oil * co2price_pre27 
+        price_part_2027 = 100 * co2_price_ct_per_EUR_oil * co2price_2027
+        add_text = " (ab 2027)"
+        st.write(f"CO2-Kosten (vor 2027): {co2price_pre27} €/t")
+        st.write(f"CO2-Kosten {add_text}: {co2price_2027} €/t")
 
-    with col:
-        first_gdp = first_year[first_year['Country Code'] == country]['GDP'].iat[0] / 1000000000
-        last_gdp = last_year[last_year['Country Code'] == country]['GDP'].iat[0] / 1000000000
+        st.write("CO2-Preisanteil (vor 2027): "
+                f"{price_part_pre2027:.2f} ct/kWh")
+        st.write(f"CO2-Preisanteil{add_text}: "
+                f"{price_part_2027:.2f} ct/kWh")
+        
+        st.write("#### Alte Heizung")
+        st.markdown(f"Wärmepreis (aktuell): "
+                    "<span style='font-family: monospace;"
+                    "color: yellow; font-weight: bold;'>"
+                    f"{100 * act_oilprice_kWh / burn_perf:.2f}</span> ct/kWh", unsafe_allow_html=True)
+        totprice_oil = (act_oilprice_kWh - price_part_pre2027 +
+                        price_part_2027) / burn_perf 
+        st.markdown(f"Wärmepreis {add_text}: "
+                    "<span style='font-family: monospace;"
+                    "color: red; font-weight: bold;'>"
+                    f"{100 * totprice_oil:.2f}</span> ct/kWh", unsafe_allow_html=True)
 
-        if math.isnan(first_gdp):
-            growth = 'n/a'
-            delta_color = 'off'
-        else:
-            growth = f'{last_gdp / first_gdp:,.2f}x'
-            delta_color = 'normal'
+        st.write("#### Wärmepumpe")
+        totprice_wp = elprice / wp_jaz
+        st.markdown(f"Wärmepreis {add_text}: "
+                    "<span style='font-family: monospace;"
+                    "color: green; font-weight: bold;'>"
+                    f"{totprice_wp:.2f}</span> ct/kWh", unsafe_allow_html=True)
 
-        st.metric(
-            label=f'{country} GDP',
-            value=f'{last_gdp:,.0f}B',
-            delta=growth,
-            delta_color=delta_color
-        )
+
+
+if old_gas:
+    cost_per_year_pre27 = cons_kWh * act_gasprice / burn_perf # ct->€=100
+    cost_per_year_post27 = cons_kWh * totprice_gas
+    cost_per_year_wp = cons_kWh / wp_jaz * (elprice / 100.0)
+else: # old_oil
+    cost_per_year_pre27 = cons_liter * act_oilprice / (burn_perf / 100)
+    cost_per_year_post27 = cons_kWh * totprice_oil / (burn_perf / 100)
+    cost_per_year_wp = cons_kWh / wp_jaz * (elprice / 100.0)
+    
+
+st.write("### Kosten pro Jahr")
+st.markdown(f"Alte Heizung (vor 2027): "
+    "<span style='font-family: monospace;"
+    "color: yellow; font-weight: bold;'>"
+    f"{cost_per_year_pre27:.0f}</span> €", unsafe_allow_html=True)
+st.markdown(f"Alte Heizung (ab 2027) : "
+    "<span style='font-family: monospace;"
+    "color: red; font-weight: bold;'>"
+    f"{cost_per_year_post27:.0f}</span> €", unsafe_allow_html=True)
+st.markdown(f"Wärmepumpe: "
+    "<span style='font-family: monospace;"
+    "color: green; font-weight: bold;'>"
+    f"{cost_per_year_wp:.0f}</span> €", unsafe_allow_html=True)
+
+# Datentabellen erstellen
+
+years = []
+cost_old = []
+cost_new = []
+sum_old : float = 0.0
+sum_new : float = 0.0
+tot_old = []
+tot_new = []
+cost_diff = []
+tot_diff = []
+
+for i in range(calclength):
+    ayear = startyear + i
+    years.append(ayear)
+    is_pre27 = ayear < 2027
+    cost_old_tmp : float = ((repl_price if i == 0 else 0) + 
+        cost_per_year_pre27 if is_pre27 else cost_per_year_post27)
+    cost_new_tmp : float = ((initial_wp if i == 0 else 0) + 
+        cost_per_year_wp )
+    cost_old.append(cost_old_tmp)
+    cost_new.append(cost_new_tmp)
+    sum_old += cost_old_tmp
+    sum_new += cost_new_tmp
+    tot_old.append(round(sum_old,0))
+    tot_new.append(round(sum_new,0))
+    cost_diff.append(cost_old_tmp - cost_new_tmp)
+    tot_diff.append(round(sum_old - sum_new, 0))
+
+data = {
+    "year" : years,
+    #"difference" : sum_old - sum_new,
+    #"cost_old" : cost_old,
+    #"cost_new" : cost_new,
+    f"{altheiz} Ges." : tot_old,
+    "Wärmepumpe Ges." : tot_new,
+    "Einsparung" : tot_diff
+}
+
+data_table = {
+    "year" : data["year"],
+    f"{altheiz} Kosten" : [ round(i,0) for i in cost_old ],
+    "WP Kosten" : [ round(i,0) for i in cost_new ],
+    f"{altheiz} Ges." : tot_old,
+    "WP Ges." : tot_new,
+    "Einsp." : cost_diff,
+    "Einsp. Ges." : tot_diff
+}
+
+df = pd.DataFrame(data)
+dftab = pd.DataFrame(data_table)
+
+#st.write(data)
+st.header(f"Kostenvergleich über {calclength} Jahre", divider='gray')
+
+st.line_chart(df, x="year", x_label="Jahr", y_label="€")
+
+st.write(dftab)
