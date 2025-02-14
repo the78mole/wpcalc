@@ -208,7 +208,7 @@ for i in range(calclength):
     sum_new += cost_new_tmp
     tot_old.append(round(sum_old,0))
     tot_new.append(round(sum_new,0))
-    cost_diff.append(cost_old_tmp - cost_new_tmp)
+    cost_diff.append(round(cost_old_tmp - cost_new_tmp,0))
     tot_diff.append(round(sum_old - sum_new, 0))
 
 data = {
@@ -222,7 +222,7 @@ data = {
 }
 
 data_table = {
-    "year" : data["year"],
+    "Jahr" : years,
     f"{altheiz} Kosten" : [ round(i,0) for i in cost_old ],
     "WP Kosten" : [ round(i,0) for i in cost_new ],
     f"{altheiz} Ges." : tot_old,
@@ -235,8 +235,9 @@ df = pd.DataFrame(data)
 dftab = pd.DataFrame(data_table)
 
 #st.write(data)
-st.header(f"Kostenvergleich über {calclength} Jahre", divider='gray')
+st.header(f"Kostenvergleich grafisch über {calclength} Jahre", divider='gray')
 
 st.line_chart(df, x="year", x_label="Jahr", y_label="€")
 
+st.header(f"Kostenvergleich tabellarisch über {calclength} Jahre", divider='gray')
 st.write(dftab)
