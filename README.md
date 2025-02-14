@@ -1,6 +1,6 @@
 # :fire: Wärmepumpenrechner
 
-Eine einfache App, mit der man errechnen kann, wie schnell sich eine Wärmepumpe im Vergleich zu einer neuen Gasheizung amortisiert.
+Eine einfache App, mit der man errechnen kann, wie schnell sich eine Wärmepumpe im Vergleich zu einer neuen Gas- oder Ölheizung amortisiert.
 
 [![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://waermepumpenrechner.streamlit.app/)
 
