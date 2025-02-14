@@ -17,6 +17,10 @@ st.set_page_config(
 # :fire: Wärmepumpenrechner
 
 Berechnung der Amortisation einer Wärmepumpe gegenüber eines neuen Gas- oder Ölkessels.
+
+Dieses Tool ist möglichst einfach gehalten und beinhaltet auch keine prozentualen Preissteigerung der Energiekosten abseits des steigenden CO2-Preises ab 2027. Dies hat auch nur wenig Auswirkungen auf die Amortisation, da in den nächsten Jahren die Strompreise noch recht stark an die fossilen Preise gekoppelt sind.
+
+Die Inflation ist ebenfalls nicht berücksichtigt, da sie sich auf alle Energieformen etwa gleich auswirken wird. Insgesamt verkompliziert es die Rechnung nur, hat aber keinen Mehrwert.
 '''
 
 # Add some spacing
@@ -65,12 +69,26 @@ with col2:
     wp_jaz = st.slider("Hersteller JAZ", 2.0, 8.0, 4.0, 0.1, help=tooltip_jaz)
 
     tooltip_incent = """TODO: Diese Auswahl füllt die nächsten Felder aus, bitte prüfen."""
-    incent_choice = st.selectbox("Förderprogramm", ["keines", "GEG (normal)", "GEG (schnell)", "GEG (max)"], help=tooltip_incent)
+    incent_choice = st.selectbox("Förderprogramm", ["keines", "BEG (normal)", "BEG (schnell)", "BEG (max)"], help=tooltip_incent)
 
-    wp_incent = st.number_input("Förderung %", 0, 100, 50)
+    if incent_choice == "BEG (normal)":
+        wp_incent_p = 50
+    elif incent_choice == "BEG (schnell)":
+        wp_incent_p = 60
+    elif incent_choice == "BEG (max)":
+        wp_incent_p = 70
+    else:
+        wp_incent_p = 0
+
+    wp_incent = st.number_input("Förderung %", 0, 100, wp_incent_p)
     wp_incent_max = st.number_input("Förderung max. €", 0, 100000, 30000)
 
-    initial_wp = wp_cost - min(wp_cost * (wp_incent / 100), wp_incent_max)
+    if wp_cost > wp_incent_max:
+        cost_red = wp_incent_max * wp_incent / 100
+    else:
+        cost_red = wp_cost * wp_incent / 100
+    
+    initial_wp = wp_cost - cost_red
     #st.write(f"Anschaffungskosten: {wp_cost:.0f} €")         
     st.markdown("Kosten abzgl. Förderung: "
                 "<span style='font-size: 2em; font-weight: bold;'>"
@@ -110,7 +128,7 @@ with col4:
         st.write("#### Alte Heizung")
         st.markdown(f"Wärmepreis (aktuell): "
                     "<span style='font-family: monospace;"
-                    "color: yellow; font-weight: bold;'>"
+                    "color: orange; font-weight: bold;'>"
                     f"{100 * act_gasprice / burn_perf:.2f}</span> ct/kWh", unsafe_allow_html=True)
         totprice_gas = (act_gasprice - price_part_pre2027 +
                         price_part_2027) / burn_perf
@@ -140,7 +158,7 @@ with col4:
         st.write("#### Alte Heizung")
         st.markdown(f"Wärmepreis (aktuell): "
                     "<span style='font-family: monospace;"
-                    "color: yellow; font-weight: bold;'>"
+                    "color: orange; font-weight: bold;'>"
                     f"{100 * act_oilprice_kWh / burn_perf:.2f}</span> ct/kWh", unsafe_allow_html=True)
         totprice_oil = (act_oilprice_kWh - price_part_pre2027 +
                         price_part_2027) / burn_perf 
@@ -171,7 +189,7 @@ else: # old_oil
 st.write("### Kosten pro Jahr")
 st.markdown(f"Alte Heizung (vor 2027): "
     "<span style='font-family: monospace;"
-    "color: yellow; font-weight: bold;'>"
+    "color: orange; font-weight: bold;'>"
     f"{cost_per_year_pre27:.0f}</span> €", unsafe_allow_html=True)
 st.markdown(f"Alte Heizung (ab 2027) : "
     "<span style='font-family: monospace;"
