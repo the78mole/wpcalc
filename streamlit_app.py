@@ -41,12 +41,12 @@ with col1:
     if old_gas:
         # Laut BMWK 0,65 ct/kWh @ 30 €/t_CO2
         co2gas_gperkwh = st.slider("gCO2_eq pro kWh Gas", 200, 400, 216)
-        cons_kWh = st.number_input("Gasbedarf pro Jahr (kWh)", 30000)
+        cons_kWh = st.number_input("Gasbedarf pro Jahr (kWh)", value=30000)
         act_gasprice = st.number_input("Gaspreis aktuell (ct/kWh)", 0.0, 30.0, 11.78, 0.1)
     else:
         # bei 266 g_CO2/Liter => 7,89 ct/Liter
         co2oil_gprol = st.slider("gCO2_eq pro Liter HEL", 200, 400, 266) 
-        cons_liter = st.number_input("Ölbedarf pro Jahr (l)", 3500)
+        cons_liter = st.number_input("Ölbedarf pro Jahr (l)", value=3500)
         st.write(f"Entspricht {cons_liter * 10} kWh/a")
         act_oilprice = st.slider("Heizölpreis €/Liter",0.5,2.0,1.01,0.01)
         act_oilprice_kWh = 10 * act_oilprice # recalc to ct/kWh
