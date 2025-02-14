@@ -21,6 +21,8 @@ Berechnung der Amortisation einer Wärmepumpe gegenüber eines neuen Gas- oder �
 Dieses Tool ist möglichst einfach gehalten und beinhaltet auch keine prozentualen Preissteigerung der Energiekosten abseits des steigenden CO2-Preises ab 2027. Dies hat auch nur wenig Auswirkungen auf die Amortisation, da in den nächsten Jahren die Strompreise noch recht stark an die fossilen Preise gekoppelt sind.
 
 Die Inflation ist ebenfalls nicht berücksichtigt, da sie sich auf alle Energieformen etwa gleich auswirken wird. Insgesamt verkompliziert es die Rechnung nur, hat aber keinen Mehrwert.
+
+Möchte man erfahren, wie sich die Wärmepumpe auswirkt, wenn man die alte Heizung drin lässt, dann einfach die Kosten für den Tausch auf 0 € setzen.
 '''
 
 # Add some spacing
