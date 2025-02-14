@@ -88,7 +88,7 @@ with col3:
     else:
         co2_price_ct_per_EUR_oil = 1.19 * co2oil_gprol / 1000000
     curyear = dt.now().year
-    startyear = st.slider("Beginn im Jahr", curyear, curyear + 10, curyear, 1)
+    startyear = st.slider("Beginn im Jahr", curyear - 10, curyear + 10, curyear, 1)
     calclength = st.slider("Anzahl Jahre:", 5, 50, 20)
 
 with col4:
