@@ -44,14 +44,17 @@ with col1:
         old_oil = True
         old_gas = False
 
+    co2intenshelp = "Die CO2-Intensitäten werden entsprechend UBA vorausgefüllt.  \nErdgas: 216 gCO2/kWh,  \nErdöl: 2680 gCO2/Liter = 268 gCO2/kWh"
     if old_gas:
         # Laut BMWK 0,65 ct/kWh @ 30 €/t_CO2
-        co2gas_gperkwh = st.slider("gCO2_eq pro kWh Gas", 200, 400, 216)
+        co2gas_gperkwh = st.slider(
+            "gCO2_eq pro kWh Gas", 200, 400, 216, help=co2intenshelp)
         cons_kWh = st.number_input("Gasbedarf pro Jahr (kWh)", value=30000)
         act_gasprice = st.number_input("Gaspreis aktuell (ct/kWh)", 0.0, 30.0, 11.78, 0.1)
     else:
         # bei 266 g_CO2/Liter => 7,89 ct/Liter
-        co2oil_gprol = st.slider("gCO2_eq pro Liter HEL", 200, 400, 266) 
+        co2oil_gprol = st.slider(
+            "gCO2_eq pro kWh HEL", 2000, 4000, 2680, help=co2intenshelp) 
         cons_liter = st.number_input("Ölbedarf pro Jahr (l)", value=3500)
         st.write(f"Entspricht {cons_liter * 10} kWh/a")
         act_oilprice = st.slider("Heizölpreis €/Liter",0.5,2.0,1.01,0.01)
@@ -106,7 +109,7 @@ with col3:
     if old_gas:
         co2_price_ct_per_EUR_gas = 1.19 * co2gas_gperkwh / 1000000
     else:
-        co2_price_ct_per_EUR_oil = 1.19 * co2oil_gprol / 1000000
+        co2_price_ct_per_EUR_oil = 1.19 * (co2oil_gprol / 10) / 1000000
     curyear = dt.now().year
     startyear = st.slider("Beginn im Jahr", curyear - 10, curyear + 10, curyear, 1)
     calclength = st.slider("Anzahl Jahre:", 5, 50, 20)
