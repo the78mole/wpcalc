@@ -225,8 +225,8 @@ for i in range(calclength):
         cost_per_year_pre27 if is_pre27 else cost_per_year_post27)
     cost_new_tmp : float = ((initial_wp if i == 0 else 0) + 
         cost_per_year_wp )
-    cost_old.append(cost_old_tmp)
-    cost_new.append(cost_new_tmp)
+    cost_old.append(round(cost_old_tmp,0))
+    cost_new.append(round(cost_new_tmp,0))
     sum_old += cost_old_tmp
     sum_new += cost_new_tmp
     tot_old.append(round(sum_old,0))
@@ -235,7 +235,7 @@ for i in range(calclength):
     tot_diff.append(round(sum_old - sum_new, 0))
 
 data = {
-    "year" : years,
+    "year" : [ f"{i}" for i in years ],
     #"difference" : sum_old - sum_new,
     #"cost_old" : cost_old,
     #"cost_new" : cost_new,
@@ -245,13 +245,13 @@ data = {
 }
 
 data_table = {
-    "Jahr" : years,
-    f"{altheiz} Kosten" : [ round(i,0) for i in cost_old ],
-    "WP Kosten" : [ round(i,0) for i in cost_new ],
-    f"{altheiz} Ges." : tot_old,
-    "WP Ges." : tot_new,
-    "Einsp." : cost_diff,
-    "Einsp. Ges." : tot_diff
+    "Jahr" : [ f"{i}" for i in years ],
+    f"{altheiz} Kosten" : [ f"{i} €" for i in cost_old ],
+    "WP Kosten" : [ f"{i} €" for i in cost_new ],
+    f"{altheiz} Ges." : [ f"{i} €" for i in tot_old],
+    "WP Ges." : [ f"{i} €" for i in tot_new],
+    "Einsp." : [ f"{i} €" for i in cost_diff],
+    "Einsp. Ges." : [ f"{i} €" for i in tot_diff]
 }
 
 df = pd.DataFrame(data)
