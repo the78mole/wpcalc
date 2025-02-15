@@ -246,12 +246,12 @@ data = {
 
 data_table = {
     "Jahr" : [ f"{i}" for i in years ],
-    f"{altheiz} Kosten" : [ f"{i} €" for i in cost_old ],
-    "WP Kosten" : [ f"{i} €" for i in cost_new ],
-    f"{altheiz} Ges." : [ f"{i} €" for i in tot_old],
-    "WP Ges." : [ f"{i} €" for i in tot_new],
-    "Einsp." : [ f"{i} €" for i in cost_diff],
-    "Einsp. Ges." : [ f"{i} €" for i in tot_diff]
+    f"{altheiz} Kosten" : [ f"{i:.0f} €" for i in cost_old ],
+    "WP Kosten" : [ f"{i:.0f} €" for i in cost_new ],
+    f"{altheiz} Ges." : [ f"{i:.0f} €" for i in tot_old],
+    "WP Ges." : [ f"{i:.0f} €" for i in tot_new],
+    "Einsp." : [ f"{i:.0f} €" for i in cost_diff],
+    "Einsp. Ges." : [ f"{i:.0f} €" for i in tot_diff]
 }
 
 df = pd.DataFrame(data)
