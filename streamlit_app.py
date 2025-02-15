@@ -221,8 +221,8 @@ for i in range(calclength):
     ayear = startyear + i
     years.append(ayear)
     is_pre27 = ayear < 2027
-    cost_old_tmp : float = ((repl_price if i == 0 else 0) + 
-        cost_per_year_pre27 if is_pre27 else cost_per_year_post27)
+    cost_old_tmp : float = (repl_price if i == 0 else 0)
+    cost_old_tmp += cost_per_year_pre27 if is_pre27 else cost_per_year_post27
     cost_new_tmp : float = ((initial_wp if i == 0 else 0) + 
         cost_per_year_wp )
     cost_old.append(round(cost_old_tmp,0))
