@@ -144,7 +144,7 @@ with col4:
 
         st.write("#### Wärmepumpe")
         totprice_wp = elprice / wp_jaz
-        st.markdown(f"Wärmepreis {add_text}: "
+        st.markdown(f"Wärmepreis: "
                     "<span style='font-family: monospace;"
                     "color: green; font-weight: bold;'>"
                     f"{totprice_wp:.2f}</span> ct/kWh", unsafe_allow_html=True)
